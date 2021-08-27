@@ -3,16 +3,23 @@
 from datetime import datetime
 
 from sqlalchemy import create_engine
-from ...settings import DATABASE_URI
-from models import registrationUser, User, Base
+
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
-import yaml
+from src.database.models import Base
+from loguru import logger
+
+import sys
+
+sys.path.append("/app")
+from settings import DATABASE_URL
+
 
 
 def initTable():
-    print("connected")
-    engine = create_engine(DATABASE_URI)
+    logger.info("database conncted succes")
+    engine = create_engine(DATABASE_URL)
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
-    return Session
+    session = Session()
+    return session

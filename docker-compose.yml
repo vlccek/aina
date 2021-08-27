@@ -6,26 +6,27 @@ networks:
 
 services:
     db:
-        container_name: db_aina
+        # container_name: db_aina
         image: postgres:12-alpine
         environment:
+            POSTGRES_USER: postgres
             POSTGRES_PASSWORD: root
-            POSTGRES_DB: test_db
+            POSTGRES_DB: aina
         volumes:
             - postgres_data:/var/lib/postgresql/data/
     bot:
-        container_name: bot_aina
+        # container_name: bot_aina
         build: .
         depends_on:
             - db
         volumes: 
             - ./src/database/test.py:/app/test.py
-    pgadmin:
-        container_name: pgadmin_aina
-        image: dpage/pgadmin4
-        restart: always
-        environment:
-            PGADMIN_DEFAULT_EMAIL: admin@admin.com
-            PGADMIN_DEFAULT_PASSWORD: root
+#    pgadmin:
+        # container_name: pgadmin_aina
+#        image: dpage/pgadmin4
+#        restart: always
+#        environment:
+#          PGADMIN_DEFAULT_EMAIL: admin@admin.com
+#          PGADMIN_DEFAULT_PASSWORD: root
 volumes:
     postgres_data:

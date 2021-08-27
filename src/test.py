@@ -16,7 +16,7 @@ class Slash(commands.Cog):
     async def acommand(self, ctx, argument):
         await ctx.send("Stuff")
 
-    @cog_ext.cog_slash(name="testimport",  guild_ids=[766312539994456105])
+    @cog_ext.cog_slash(name="testimport", guild_ids=bot.guild_ids)
     async def _testping(ctx):  # Defines a new "context" (ctx) command called "ping."
         await ctx.send(f"Pong! ({bot.latency*1000}ms)")
 

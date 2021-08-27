@@ -36,11 +36,12 @@ class TicTacToe(commands.Cog):
         base="tic_tac_toe",
         name="start",
         description="Start a game of tic tac toe",
-        guild_ids=guild_ids,
+        guild_ids=bot.guild_ids,
     )
     async def ttt_start(self, ctx: SlashContext):
         await ctx.send(
-            content=f"{ctx.author.mention}'s tic tac toe game", components=create_board()
+            content=f"{ctx.author.mention}'s tic tac toe game",
+            components=create_board(),
         )
 
     def determine_board_state(self, components: list):

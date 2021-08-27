@@ -2,18 +2,20 @@ import datetime
 from sqlalchemy import Boolean, Column, String, Integer, DateTime
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Date
+from sqlalchemy import Column, Integer, String, Date, BigInteger
 from sqlalchemy.dialects.postgresql import MONEY
 
 Base = declarative_base()
 
 
+
 class User(Base):
     __tablename__ = "user"
 
-    idx = Column(Integer, primary_key=True)
+    idx = Column(BigInteger, primary_key=True)
     email = Column(String)
-    dateofregistration = Column(DateTime)
+    dateOfMailSend = Column(DateTime)
+    dateOfaddingRoles = Column(DateTime)
     grade = Column(String)
     faculty = Column(String)
 
@@ -28,10 +30,11 @@ class registrationUser(Base):
     __tablename__ = "registrationUser"
 
     idx = Column(Integer, primary_key=True, autoincrement=True)
-    idofuser = Column(Integer)
+    idofuser = Column(BigInteger)
     email = Column(String)
-    date = Column(DateTime)
+    dateOfMailSend = Column(DateTime)
     token = Column(String)
+    nameofuser = Column(String)
 
     def __repr__(self):
         return (

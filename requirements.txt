@@ -8,3 +8,6 @@ discord == 1.0.1
 
 # VFUbot/bot.py: 3,4
 discord_py_slash_command
+
+loguru
+psycopg2-binary
