@@ -15,7 +15,6 @@ sys.path.append("/app")
 from settings import DATABASE_URL
 
 
-
 def initTable():
     logger.info("database conncted succes")
     engine = create_engine(DATABASE_URL)

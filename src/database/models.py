@@ -8,7 +8,6 @@ from sqlalchemy.dialects.postgresql import MONEY
 Base = declarative_base()
 
 
-
 class User(Base):
     __tablename__ = "user"
 

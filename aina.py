@@ -31,7 +31,9 @@ bot.guild_ids = settings.guild_ids
 
 @bot.event
 async def on_ready():
-    logger.info(f"Aina starts succesfull. Logged by {bot.user.name}. Id of aina {bot.user.id}. ")
+    logger.info(
+        f"Aina starts succesfull. Logged by {bot.user.name}. Id of aina {bot.user.id}. "
+    )
 
 
 @slash.slash(name="ping", guild_ids=bot.guild_ids)
@@ -59,8 +61,6 @@ async def load_module(ctx, modul: str):
 @slash.slash(name="loaded_modules", description="Vypíše načtené moduly bro")
 def _loaded_modules(ctx):
     ctx.send(str(loaded_modules))
-
-
 
 
 load_extension("src.test")

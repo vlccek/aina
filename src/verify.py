@@ -18,17 +18,21 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
 
-from src.database.models import  registrationUser, User 
+from src.database.models import registrationUser, User
 from sqlalchemy.sql import select
-
+import sys
+sys.path.append("/app")
+from settings import guild_ids
 
 def parseMail(message):
     reemail = re.search("^(([vh])((\d{2})\d{3})\@vfu\.cz)$", message)
     return reemail
 
 
-def send_mail_to(nameofuser: str, receiver: str, token : str):
-    logger.info(f"Sending mail to address {receiver} with token {token} name of user are {nameofuser}")
+def send_mail_to(nameofuser: str, receiver: str, token: str):
+    logger.info(
+        f"Sending mail to address {receiver} with token {token} name of user are {nameofuser}"
+    )
     context = ssl.create_default_context()
     smtp_server = "smtp.seznam.cz"
     port = 465  # For starttls
@@ -96,14 +100,14 @@ class Slash(commands.Cog):
         name="verify",
         description="Verifikuj se!",
         options=[
-        create_option(
-            name="email",
-            description="Email z vfu",
-            option_type=3,
-            required=True,
-        )
-    ],
-        guild_ids=bot.guild_ids,
+            create_option(
+                name="email",
+                description="Email z vfu",
+                option_type=3,
+                required=True,
+            )
+        ],
+        guild_ids=guild_ids,
     )
     async def slash_verify(self, ctx, email):
         logger.info("Runing verify command with")
@@ -114,7 +118,13 @@ class Slash(commands.Cog):
             )
             token = generatetoken()
             send_mail_to(ctx.author.name, email, token)
-            newuser = registrationUser(idofuser=ctx.author.id, email=email,dateOfMailSend=datetime.datetime.now(),token=token , nameofuser=ctx.author.name)
+            newuser = registrationUser(
+                idofuser=ctx.author.id,
+                email=email,
+                dateOfMailSend=datetime.datetime.now(),
+                token=token,
+                nameofuser=ctx.author.name,
+            )
             self.bot.db.add(newuser)
             self.bot.db.commit()
         else:
@@ -122,26 +132,28 @@ class Slash(commands.Cog):
                 "Text který si zadal neodpovídá mail z VFU. Pro registraci je potřeba jedině školní mail",
                 delete_after=10,
             )
-    
+
     @cog_ext.cog_slash(
         name="kod",
         description="Verifikuj se!",
         options=[
-        create_option(
-            name="kod",
-            description="Email z vfu",
-            option_type=3,
-            required=True,
-        )
-    ],
-        guild_ids=bot.guild_ids,
+            create_option(
+                name="kod",
+                description="Email z vfu",
+                option_type=3,
+                required=True,
+            )
+        ],
+        guild_ids=guild_ids,
     )
     async def slash_kod(self, ctx, kod):
-        logger.info(f"User: {ctx.author.name} with id: {ctx.author.id}. Are trying to use command /kod with token {kod}")
+        logger.info(
+            f"User: {ctx.author.name} with id: {ctx.author.id}. Are trying to use command /kod with token {kod}"
+        )
         result = self.bot.db.query(registrationUser).filter_by(token=kod).first()
-        
+
         if not result.idofuser == ctx.author.id:
-            await ctx.send("Tento token nenáležík tvému učtu")
+            await ctx.send("Tento token nenáleží k tvému učtu")
 
         parsedMail = parseMail(result.email)
 
@@ -165,14 +177,22 @@ class Slash(commands.Cog):
             await ctx.author.add_roles(facultyrole)
 
         grade = parsedMail.group(4)
+        facultyrole = discord.utils.get(
+                ctx.guild.roles, name=grade)
+        
+        await ctx.author.add_roles(facultyrole)
 
-        newUser = User(idx= ctx.author.id, email=result.email, dateOfMailSend=result.dateOfMailSend, dateOfaddingRoles=datetime.datetime.now(), grade=grade, faculty=faculty)
+        newUser = User(
+            idx=ctx.author.id,
+            email=result.email,
+            dateOfMailSend=result.dateOfMailSend,
+            dateOfaddingRoles=datetime.datetime.now(),
+            grade=grade,
+            faculty=faculty,
+        )
         self.bot.db.add(newUser)
         self.bot.db.commit()
         await ctx.send("Byl jsi uspěšně verifikován!", delete_after=10)
-
-
-        
 
 
 def setup(bot):
