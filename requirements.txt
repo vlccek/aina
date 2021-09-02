@@ -11,3 +11,5 @@ discord_py_slash_command
 
 loguru
 psycopg2-binary
+
+utilsx

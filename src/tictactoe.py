@@ -12,11 +12,9 @@ from discord_slash.model import ButtonStyle
 
 # from modules.get_settings import get_settings
 import sys
+
 sys.path.append("/app")
 from settings import guild_ids
-
-
-guild_ids = [766312539994456105]
 
 
 def create_board() -> list:

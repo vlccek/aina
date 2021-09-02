@@ -10,6 +10,7 @@ from loguru import logger
 
 import os
 import settings
+from settings import guild_ids
 
 loaded_modules = list()
 
@@ -24,7 +25,6 @@ bot = commands.Bot(command_prefix="/")
 slash = SlashCommand(
     bot, sync_commands=True, sync_on_cog_reload=True, override_type=True
 )
-guild_ids = [766312539994456105]
 bot.db = initTable()
 bot.guild_ids = settings.guild_ids
 

@@ -21,8 +21,10 @@ from email.utils import formatdate
 from src.database.models import registrationUser, User
 from sqlalchemy.sql import select
 import sys
+
 sys.path.append("/app")
 from settings import guild_ids
+
 
 def parseMail(message):
     reemail = re.search("^(([vh])((\d{2})\d{3})\@vfu\.cz)$", message)
@@ -111,6 +113,14 @@ class Slash(commands.Cog):
     )
     async def slash_verify(self, ctx, email):
         logger.info("Runing verify command with")
+
+        if self.bot.db.query(User).filter_by(idx=ctx.author.id).first():
+            await ctx.send(
+                "Už si verifikován. Pokud nevidíš kanály, obrať se na Správce.",
+                delete_after=10,
+            )
+            return
+
         if check_mail_vfu(email):
             await ctx.send(
                 "Haf, velmi brzy ti dorazí email. Zbytek instrukcí je v mailu. Pokud nepřijde do pěti minut, zkus zkontrolovat nevyžádanou poštu nebo kontaktuj správce.",
@@ -148,12 +158,26 @@ class Slash(commands.Cog):
     )
     async def slash_kod(self, ctx, kod):
         logger.info(
-            f"User: {ctx.author.name} with id: {ctx.author.id}. Are trying to use command /kod with token {kod}"
+            f"User: '{ctx.author.name} with id: '{ctx.author.id}'. Are trying to use command /kod with token '{kod}'"
         )
         result = self.bot.db.query(registrationUser).filter_by(token=kod).first()
 
+        if result == None:
+            logger.info(
+                f"User: '{ctx.author.name} with id: '{ctx.author.id}'. Trying to use noknow token. '"
+            )
+            await ctx.send(
+                "Takový kod není v databází. Pravděpodobně si jej špatně zkopíroval. Pokud bude problém nadále přetrvávat kontaktuj správce.",
+                delete_after=10,
+            )
+            return
+
         if not result.idofuser == ctx.author.id:
+            logger.info(
+                f"User: '{ctx.author.name} with id: '{ctx.author.id}'. Trying to use token that is not from his mail. '"
+            )
             await ctx.send("Tento token nenáleží k tvému učtu")
+            return
 
         parsedMail = parseMail(result.email)
 
@@ -173,14 +197,20 @@ class Slash(commands.Cog):
             )
             await ctx.author.add_roles(facultyrole)
         else:
-            faculty = "Unkown"
+            faculty = parsedMail.group(2)
             await ctx.author.add_roles(facultyrole)
 
         grade = parsedMail.group(4)
-        facultyrole = discord.utils.get(
-                ctx.guild.roles, name=grade)
-        
+        facultyrole = discord.utils.get(ctx.guild.roles, name=grade)
+
         await ctx.author.add_roles(facultyrole)
+
+        if self.bot.db.query(User).filter_by(idx=ctx.author.id).first():
+            await ctx.send(
+                "Už si verifiková. Pokud nevidíš kanály, obrať se na Správce",
+                delete_after=10,
+            )
+            return
 
         newUser = User(
             idx=ctx.author.id,
