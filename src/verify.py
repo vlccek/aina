@@ -23,7 +23,7 @@ from sqlalchemy.sql import select
 import sys
 
 sys.path.append("/app")
-from settings import guild_ids
+from settings import guild_ids, email_pass,email_name
 
 
 def parseMail(message):
@@ -38,8 +38,8 @@ def send_mail_to(nameofuser: str, receiver: str, token: str):
     context = ssl.create_default_context()
     smtp_server = "smtp.seznam.cz"
     port = 465  # For starttls
-    sender_email = "aina@jevlk.cz"
-    password = "ainajenej123"
+    sender_email = email_name
+    password = email_pass
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)
         # Create message container - the correct MIME type is multipart/alternative.
