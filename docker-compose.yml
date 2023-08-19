@@ -6,7 +6,7 @@ services:
         image: postgres:12-alpine
         environment:
             POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: root
+            POSTGRES_PASSWORD: Hovno123
             POSTGRES_DB: aina
         volumes:
             - postgres_data:/var/lib/postgresql/data/

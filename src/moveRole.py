@@ -6,7 +6,7 @@ import sys
 
 
 sys.path.append("/app")
-from settings import guild_ids, emailPass
+from settings import guild_ids
 
 
 
