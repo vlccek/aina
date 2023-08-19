@@ -1,10 +1,10 @@
 version: '3'
-restart: unless-stopped
-
+    
 services:
     db:
         # container_name: db_aina
         image: postgres:12-alpine
+        restart: unless-stopped
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: Hovno123
@@ -13,6 +13,7 @@ services:
             - postgres_data:/var/lib/postgresql/data/
     bot:
         # container_name: bot_aina
+        restart: unless-stopped
         build: .
         depends_on:
             - db
