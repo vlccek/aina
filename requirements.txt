@@ -10,6 +10,4 @@ discord == 1.0.1
 discord_py_slash_command
 
 loguru
-psycopg2-binary
-
-utilsx
+psycopg2-binary==2.9.7
