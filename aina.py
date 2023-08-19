@@ -21,7 +21,7 @@ def load_extension(name):
     bot.load_extension(name)
 
 
-bot = commands.Bot(command_prefix="/")
+bot = commands.Bot(command_prefix=".")
 slash = SlashCommand(
     bot, sync_commands=True, sync_on_cog_reload=True, override_type=True
 )
@@ -66,5 +66,6 @@ def _loaded_modules(ctx):
 load_extension("src.test")
 load_extension("src.tictactoe")
 load_extension("src.verify")
+load_extension("src.moveRole")
 logger.info("all basic load extension was loaded")
 bot.run(settings.token)
