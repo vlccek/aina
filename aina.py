@@ -62,7 +62,9 @@ async def _ping(ctx):  # Defines a new "context" (ctx) command called "ping."
 )
 async def load_module(ctx, modul: str):
     load_extension("src." + modul)
-    ctx.send("Module {name} was added succes")
+    await ctx.send(f"Module {modul} was added succes",
+                   delete_after=10
+                   )
 
 
 @slash.slash(
@@ -80,12 +82,16 @@ async def load_module(ctx, modul: str):
 )
 async def unload_module(ctx, modul: str):
     unload_extension("src." + modul)
-    ctx.send("Module {name} was remove succes")
+    await ctx.send(f"Module {modul} was remove succes",
+                   delete_after=10
+                   )
 
 
 @slash.slash(name="loaded_modules", description="Vypíše načtené moduly bro")
 def _loaded_modules(ctx):
-    ctx.send(str(loaded_modules))
+    ctx.send(str(loaded_modules),
+             delete_after=10
+             )
 
 
 load_extension("src.test")
