@@ -21,6 +21,7 @@ def load_extension(name):
     bot.load_extension(name)
 
 
+
 bot = commands.Bot(command_prefix=".")
 slash = SlashCommand(
     bot, sync_commands=True, sync_on_cog_reload=True, override_type=True
@@ -38,7 +39,7 @@ async def on_ready():
 
 @slash.slash(name="ping", guild_ids=bot.guild_ids)
 async def _ping(ctx):  # Defines a new "context" (ctx) command called "ping."
-    await ctx.send(f"Pong! ({bot.latency*1000}ms)")
+    await ctx.send(f"Pong! ({bot.latency * 1000}ms)")
 
 
 @slash.slash(
@@ -55,7 +56,8 @@ async def _ping(ctx):  # Defines a new "context" (ctx) command called "ping."
     guild_ids=bot.guild_ids,
 )
 async def load_module(ctx, modul: str):
-    load_extension(modul)
+    load_extension("src." + modul)
+
 
 
 @slash.slash(name="loaded_modules", description="Vypíše načtené moduly bro")
