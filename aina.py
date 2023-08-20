@@ -23,7 +23,7 @@ def load_extension(name):
 
 def unload_extension(name):
     loaded_modules.append(name)
-    logger.info(f"Module {name} was added succes")
+    logger.info(f"Module {name} was remove succes")
     bot.unload_extension(name)
 
 
@@ -62,6 +62,7 @@ async def _ping(ctx):  # Defines a new "context" (ctx) command called "ping."
 )
 async def load_module(ctx, modul: str):
     load_extension("src." + modul)
+    ctx.send("Module {name} was added succes")
 
 
 @slash.slash(
@@ -79,6 +80,7 @@ async def load_module(ctx, modul: str):
 )
 async def unload_module(ctx, modul: str):
     unload_extension("src." + modul)
+    ctx.send("Module {name} was remove succes")
 
 
 @slash.slash(name="loaded_modules", description="Vypíše načtené moduly bro")
