@@ -62,7 +62,7 @@ class Slash(commands.Cog):
 
         logger.info(f"New host user {ctx.author}")
 
-
+        await ctx.author.send("Gratulace! Vítej mezi námi")
         await ctx.send(
             "Gratulace! Vítej mezi námi",
             delete_after=10,
