@@ -55,8 +55,19 @@ class Slash(commands.Cog):
             )
             return
 
-        studentrole = discord.utils.get(ctx.guild.roles, name="pre-student")
+        studentrole_host = discord.utils.get(ctx.guild.roles, name="pre-student")
+        studentrole = discord.utils.get(ctx.guild.roles, name="👨‍⚕️ Student")
         await ctx.author.add_roles(studentrole)
+        await ctx.author.add_roles(studentrole_host)
+
+        logger.info(f"New host user {ctx.author}")
+
+
+        await ctx.send(
+            "Gratulace! Vítej mezi námi",
+            delete_after=10,
+        )
+
 
 def setup(bot):
     bot.add_cog(Slash(bot))
