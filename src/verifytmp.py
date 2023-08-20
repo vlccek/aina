@@ -57,3 +57,6 @@ class Slash(commands.Cog):
 
         studentrole = discord.utils.get(ctx.guild.roles, name="pre-student")
         await ctx.author.add_roles(studentrole)
+
+def setup(bot):
+    bot.add_cog(Slash(bot))
