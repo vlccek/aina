@@ -21,6 +21,11 @@ def load_extension(name):
     bot.load_extension(name)
 
 
+def unload_extension(name):
+    loaded_modules.append(name)
+    logger.info(f"Module {name} was added succes")
+    bot.unload_extension(name)
+
 
 bot = commands.Bot(command_prefix=".")
 slash = SlashCommand(
@@ -58,6 +63,22 @@ async def _ping(ctx):  # Defines a new "context" (ctx) command called "ping."
 async def load_module(ctx, modul: str):
     load_extension("src." + modul)
 
+
+@slash.slash(
+    name="unload_module",
+    description="načte modul",
+    options=[
+        create_option(
+            name="modul",
+            description="modulu který chceš od-načíst",
+            option_type=3,
+            required=True,
+        )
+    ],
+    guild_ids=bot.guild_ids,
+)
+async def unload_module(ctx, modul: str):
+    unload_extension("src." + modul)
 
 
 @slash.slash(name="loaded_modules", description="Vypíše načtené moduly bro")
