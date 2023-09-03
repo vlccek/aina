@@ -85,7 +85,7 @@ class Slash(commands.Cog):
 
 
         await ctx.send(
-            "Gratulace! Vítej mezi námi",
+            "Bohužel jsem u tebe zjistil chybu při registraci. Opravou je že ti byla odebrána role. POkud máš stále zájem být součastí komuniky VETUNI se prosím znovu registruj. Na tuto zprávu neodpovídej byla poslána robotem.",
             delete_after=10,
         )
 
