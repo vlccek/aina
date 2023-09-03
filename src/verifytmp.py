@@ -44,6 +44,7 @@ class Slash(commands.Cog):
         guild_ids=guild_ids,
     )
     async def slash_host(self, ctx, heslo):
+        ctx.defer()
         logger.info("Runing host command with")
 
         passp = "ainajetop"

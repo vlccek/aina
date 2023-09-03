@@ -200,8 +200,26 @@ class Slash(commands.Cog):
             faculty = parsedMail.group(2)
             await ctx.author.add_roles(facultyrole)
 
+        roleNames = [
+            "1. Australopithecus",
+            "2. Homo habilis",
+            "3. Homo erectus",
+            "4. Homo neanderthalensis",
+            "5. Homo sapiens",
+            "6. Homo sapiens veterinariens",
+            "Vet",
+        ]
+
         grade = parsedMail.group(4)
-        facultyrole = discord.utils.get(ctx.guild.roles, name=grade)
+
+        today = datetime.date.today()
+        year = today.year
+        if today.month < 9:
+            year -=1
+
+        
+        print(int(grade)-year%2000)
+        facultyrole = discord.utils.get(ctx.guild.roles, name=roleNames[((int(grade)-year%2000) *-1)])
 
         await ctx.author.add_roles(facultyrole)
 
@@ -222,6 +240,7 @@ class Slash(commands.Cog):
         )
         self.bot.db.add(newUser)
         self.bot.db.commit()
+        await ctx.author.send("Gratulace! Vítej na serveru VET-UNI")
         await ctx.send("Byl jsi uspěšně verifikován!", delete_after=10)
 
 
