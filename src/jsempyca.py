@@ -33,14 +33,6 @@ class Slash(commands.Cog):
     @cog_ext.cog_slash(
         name="fixpeople",
         description="Verifikuj se!",
-        options=[
-            create_option(
-                name="heslo",
-                description="Heslo které vám bylo zděleno :)",
-                option_type=3,
-                required=True,
-            )
-        ],
         guild_ids=guild_ids,
     )
     async def slash_pyca(self, ctx, heslo):
