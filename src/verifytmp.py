@@ -48,15 +48,22 @@ class Slash(commands.Cog):
         logger.info("Runing host command with")
 
         passp = "ainajetop"
+        passp2 = "jsemprvak"
 
-        if heslo != passp:
+        if heslo != passp or heslo != passp2:
             await ctx.send(
                 "Heslo není správné :(",
                 delete_after=10,
             )
             return
 
-        studentrole_host = discord.utils.get(ctx.guild.roles, name="pre-student")
+        if heslo == passp2:
+            name = "skoroprvak"
+        else:
+            name = "pre-student"
+
+
+        studentrole_host = discord.utils.get(ctx.guild.roles, name=name)
         studentrole = discord.utils.get(ctx.guild.roles, name="👨‍⚕️ Student")
         await ctx.author.add_roles(studentrole)
         await ctx.author.add_roles(studentrole_host)

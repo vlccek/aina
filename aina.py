@@ -1,103 +1,107 @@
 import discord
-
-# Importing the newly installed library.
-from discord_slash import SlashCommand
-from discord_slash import cog_ext
 from discord.ext import commands
-from discord_slash.utils.manage_commands import create_option
-from src.database.crud import initTable
-from loguru import logger
-
 import os
+from dotenv import load_dotenv
+
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 import settings
-from settings import guild_ids
 
-loaded_modules = list()
+# Load environment variables
+load_dotenv()
 
+# Database setup
 
-def load_extension(name):
-    loaded_modules.append(name)
-    logger.info(f"Module {name} was added succes")
-    bot.load_extension(name)
-
-
-def unload_extension(name):
-    loaded_modules.append(name)
-    logger.info(f"Module {name} was remove succes")
-    bot.unload_extension(name)
-
-
-bot = commands.Bot(command_prefix=".")
-slash = SlashCommand(
-    bot, sync_commands=True, sync_on_cog_reload=True, override_type=True
+from src.database.crud import initTable
+DATABASE_URL = settings.DATABASE_URL
+engine = initTable()
+AsyncSessionLocal = sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
 )
-bot.db = initTable()
-bot.guild_ids = settings.guild_ids
 
+# Bot configuration
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+# Add database session to bot
+bot.engine = AsyncSessionLocal
+
+
+# Automatic cog loading
+async def load_extensions():
+    for filename in os.listdir('./src'):
+        if filename.endswith('.py'):
+            try:
+                await bot.load_extension(f'src.{filename[:-3]}')
+                print(f'Loaded extension: {filename[:-3]}')
+            except Exception as e:
+                print(f'Failed to load extension {filename[:-3]}:', str(e))
 
 @bot.event
 async def on_ready():
-    logger.info(
-        f"Aina starts succesfull. Logged by {bot.user.name}. Id of aina {bot.user.id}. "
-    )
+    print(f'{bot.user} has connected to Discord!')
+    await bot.load_extension(f'src.verify')
+    # await bot.load_extension(f'src.moveRole')
 
+    await bot.tree.sync()
+    print("Bot is ready!")
 
-@slash.slash(name="ping", guild_ids=bot.guild_ids)
-async def _ping(ctx):  # Defines a new "context" (ctx) command called "ping."
-    await ctx.send(f"Pong! ({bot.latency * 1000}ms)")
+@bot.tree.command(name="load", description="Load a command module")
+@commands.has_permissions(administrator=True)
+async def load(interaction: discord.Interaction, module: str):
+    try:
+        await bot.load_extension(f'cogs.{module}')
+        await bot.tree.sync()
+        await interaction.response.send_message(f"Module {module} loaded successfully!")
+    except Exception as e:
+        await interaction.response.send_message(f"Failed to load module {module}: {str(e)}")
 
+@bot.tree.command(name="unload", description="Unload a command module")
+@commands.has_permissions(administrator=True)
+async def unload(interaction: discord.Interaction, module: str):
+    try:
+        await bot.unload_extension(f'cogs.{module}')
+        await bot.tree.sync()
+        await interaction.response.send_message(f"Module {module} unloaded successfully!")
+    except Exception as e:
+        await interaction.response.send_message(f"Failed to unload module {module}: {str(e)}")
 
-@slash.slash(
-    name="load_module",
-    description="načte modul",
-    options=[
-        create_option(
-            name="modul",
-            description="modulu který chceš načíst",
-            option_type=3,
-            required=True,
-        )
-    ],
-    guild_ids=bot.guild_ids,
-)
-async def load_module(ctx, modul: str):
-    load_extension("src." + modul)
-    await ctx.send(f"Module {modul} was added succes",
-                   delete_after=10
-                   )
+@bot.tree.command(name="reload", description="Reload a command module")
+@commands.has_permissions(administrator=True)
+async def reload(interaction: discord.Interaction, module: str):
+    try:
+        await bot.reload_extension(f'cogs.{module}')
+        await bot.tree.sync()
+        await interaction.response.send_message(f"Module {module} reloaded successfully!")
+    except Exception as e:
+        await interaction.response.send_message(f"Failed to reload module {module}: {str(e)}")
 
+@bot.command()
+@commands.is_owner()
+async def sync(ctx, guild_id: int = None):
+    if guild_id:
+        guild = discord.Object(id=guild_id)
+        bot.tree.copy_global_to(guild=guild)
+        await bot.tree.sync(guild=guild)
+        await ctx.send(f"Slash commands synced to guild {guild_id}")
+    else:
+        await bot.tree.sync()
+        await ctx.send("Global slash commands synced")
 
-@slash.slash(
-    name="unload_module",
-    description="načte modul",
-    options=[
-        create_option(
-            name="modul",
-            description="modulu který chceš od-načíst",
-            option_type=3,
-            required=True,
-        )
-    ],
-    guild_ids=bot.guild_ids,
-)
-async def unload_module(ctx, modul: str):
-    unload_extension("src." + modul)
-    await ctx.send(f"Module {modul} was remove succes",
-                   delete_after=10
-                   )
+@bot.command()
+@commands.is_owner()
+async def sync_all(ctx):
+    synced = await bot.tree.sync()
+    await ctx.send(f"Synced {len(synced)} commands globally")
+    for guild in bot.guilds:
+        try:
+            await bot.tree.sync(guild=guild)
+            await ctx.send(f"Synced commands for guild: {guild.name} ({guild.id})")
+        except Exception as e:
+            await ctx.send(f"Failed to sync commands for guild {guild.name}: {str(e)}")
 
-
-@slash.slash(name="loaded_modules", description="Vypíše načtené moduly bro")
-def _loaded_modules(ctx):
-    ctx.send(str(loaded_modules),
-             delete_after=10
-             )
-
-
-load_extension("src.test")
-load_extension("src.tictactoe")
-load_extension("src.verify")
-# load_extension("src.moveRole")
-load_extension("src.verifytmp")
-logger.info("all basic load extension was loaded")
+# Run the bot
 bot.run(settings.token)

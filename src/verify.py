@@ -1,206 +1,159 @@
+import discord
+from discord import app_commands
 from discord.ext import commands
-from discord_slash import SlashCommand
-from discord_slash.utils.manage_commands import create_option
 import re
 from loguru import logger
 import datetime
-
-# cog.py
-import discord
-from discord.ext import commands
-from discord_slash import cog_ext, SlashContext
-
-import src.database.models as dbTypes
-
-import smtplib, ssl
+import smtplib
+import ssl
 from uuid import uuid4
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import sessionmaker, selectinload
 
-from src.database.models import registrationUser, User
-from sqlalchemy.sql import select
 import sys
-
 sys.path.append("/app")
-from settings import guild_ids, email_pass,email_name
+from settings import guild_ids, email_pass, email_name, DATABASE_URL
+from src.database.models import registrationUser, User
 
+# ... [previous functions remain the same] ...
 
-def parseMail(message):
-    reemail = re.search("^(([vh])((\d{2})\d{3})\@vfu\.cz)$", message)
-    return reemail
+def generate_token():
+    return f"t{uuid4()}"
 
+def parse_mail(message):
+    return re.search(r"^([vh])(\d{5})@vfu\.cz$", message)
 
 def send_mail_to(nameofuser: str, receiver: str, token: str):
-    logger.info(
-        f"Sending mail to address {receiver} with token {token} name of user are {nameofuser}"
-    )
+    logger.info(f"Sending mail to address {receiver} with token {token} name of user are {nameofuser}")
     context = ssl.create_default_context()
     smtp_server = "smtp.seznam.cz"
-    port = 465  # For starttls
+    port = 465
     sender_email = email_name
     password = email_pass
+
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)
-        # Create message container - the correct MIME type is multipart/alternative.
         msg = MIMEMultipart("alternative")
         msg["Subject"] = "Tvůj ověřovací kód pro Discord server VetUni"
         msg["From"] = "Aina BOT <aina@jevlk.cz>"
         msg["To"] = receiver
         msg["Date"] = formatdate()
 
-        # Create the body of the message (a plain-text and an HTML version).
-        text = "Ahoj {0}, tvůj ověřovací kód je:\n/kod kod: {1}\nZadej ho v kanále #komunikace-s-botem.".format(
-            nameofuser, token
-        )
-        html = """\
+        text = f"Ahoj {nameofuser}, tvůj ověřovací kód je:\n/kod kod: {token}\nZadej ho v kanále #komunikace-s-botem."
+        html = f"""
         <html>
-        <head></head>
         <body>
-            <p>Ahoj {0},<br>
-            tvůj ověřovací kód je: <b>{1}</b><br>Zadej ho v kanále #komunikace-s-botem.
+            <p>Ahoj {nameofuser},<br>
+            tvůj ověřovací kód je: <b>{token}</b><br>Zadej ho v kanále #komunikace-s-botem.
             Pokud nevíš, o co se jedná, tak můžeš tento email směle ignovat :D
+            </p>
         </body>
         </html>
-        """.format(
-            nameofuser, token
-        )
+        """
 
-        # Record the MIME types of both parts - text/plain and text/html.
-        part1 = MIMEText(text, "plain")
-        part2 = MIMEText(html, "html")
-
-        # Attach parts into message container.
-        # According to RFC 2046, the last part of a multipart message, in this case
-        # the HTML message, is best and preferred.
-        msg.attach(part1)
-        msg.attach(part2)
+        msg.attach(MIMEText(text, "plain"))
+        msg.attach(MIMEText(html, "html"))
 
         server.sendmail(sender_email, receiver, msg.as_string())
 
     return token
 
-
-def generatetoken():
-    rand_token = uuid4()
-    return "t{0}".format(rand_token)
+def generate_token():
+    return f"t{uuid4()}"
 
 
 def check_mail_vfu(email):
-    regex = "^[vh]\d{5}\@vfu\.cz$"
-    if re.search(regex, email):
-        return True
-    else:
-        return False
+    return bool(re.match(r"^[vh]\d{5}@vfu\.cz$", email))
 
 
-class Slash(commands.Cog):
+class VerificationCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.engine = create_engine(DATABASE_URL)
+        self.Session = sessionmaker(bind=self.engine)
 
-    @cog_ext.cog_slash(
-        name="verify",
-        description="Verifikuj se!",
-        options=[
-            create_option(
-                name="email",
-                description="Email z vfu",
-                option_type=3,
-                required=True,
-            )
-        ],
-        guild_ids=guild_ids,
-    )
-    async def slash_verify(self, ctx, email):
-        logger.info("Runing verify command with")
+    @app_commands.command(name="verify", description="Verifikuj se!")
+    @app_commands.describe(email="Email z VFU")
+    async def verify(self, interaction: discord.Interaction, email: str):
+        logger.info(f"Running verify command for {interaction.user.name}")
 
-        if self.bot.db.query(User).filter_by(idx=ctx.author.id).first():
-            await ctx.send(
+        session = self.Session()
+        
+        if session.query(User).filter_by(idx=interaction.user.id).first():
+            await interaction.response.send_message(
                 "Už si verifikován. Pokud nevidíš kanály, obrať se na Správce.",
-                delete_after=10,
+                ephemeral=True
             )
+            session.close()
             return
 
         if check_mail_vfu(email):
-            await ctx.send(
+            await interaction.response.send_message(
                 "Haf, velmi brzy ti dorazí email. Zbytek instrukcí je v mailu. Pokud nepřijde do pěti minut, zkus zkontrolovat nevyžádanou poštu nebo kontaktuj správce.",
-                delete_after=10,
+                ephemeral=True
             )
-            token = generatetoken()
-            send_mail_to(ctx.author.name, email, token)
+            token = generate_token()
+            send_mail_to(interaction.user.name, email, token)
             newuser = registrationUser(
-                idofuser=ctx.author.id,
+                idofuser=interaction.user.id,
                 email=email,
                 dateOfMailSend=datetime.datetime.now(),
                 token=token,
-                nameofuser=ctx.author.name,
+                nameofuser=interaction.user.name,
             )
-            self.bot.db.add(newuser)
-            self.bot.db.commit()
+            session.add(newuser)
+            session.commit()
         else:
-            await ctx.send(
-                "Text který si zadal neodpovídá mail z VFU. Pro registraci je potřeba jedině školní mail",
-                delete_after=10,
+            await interaction.response.send_message(
+                "Text který jsi zadal neodpovídá mailu z VFU. Pro registraci je potřeba jedině školní mail.",
+                ephemeral=True
             )
+        session.close()
 
-    @cog_ext.cog_slash(
-        name="kod",
-        description="Verifikuj se!",
-        options=[
-            create_option(
-                name="kod",
-                description="Email z vfu",
-                option_type=3,
-                required=True,
-            )
-        ],
-        guild_ids=guild_ids,
-    )
-    async def slash_kod(self, ctx, kod):
-        logger.info(
-            f"User: '{ctx.author.name} with id: '{ctx.author.id}'. Are trying to use command /kod with token '{kod}'"
-        )
-        result = self.bot.db.query(registrationUser).filter_by(token=kod).first()
+    @app_commands.command(name="kod", description="Verifikuj se pomocí kódu!")
+    @app_commands.describe(kod="Verifikační kód z emailu")
+    async def kod(self, interaction: discord.Interaction, kod: str):
+        logger.info(f"User: '{interaction.user.name}' with id: '{interaction.user.id}' is trying to use command /kod with token '{kod}'")
 
-        if result == None:
-            logger.info(
-                f"User: '{ctx.author.name} with id: '{ctx.author.id}'. Trying to use noknow token. '"
+        session = self.Session()
+
+        registration = session.query(registrationUser).filter(registrationUser.token == kod).first()
+
+        if not registration:
+            await interaction.response.send_message(
+                "Takový kód není v databázi. Pravděpodobně jsi jej špatně zkopíroval. Pokud bude problém nadále přetrvávat, kontaktuj správce.",
+                ephemeral=True
             )
-            await ctx.send(
-                "Takový kod není v databází. Pravděpodobně si jej špatně zkopíroval. Pokud bude problém nadále přetrvávat kontaktuj správce.",
-                delete_after=10,
-            )
+            session.close()
             return
 
-        if not result.idofuser == ctx.author.id:
-            logger.info(
-                f"User: '{ctx.author.name} with id: '{ctx.author.id}'. Trying to use token that is not from his mail. '"
-            )
-            await ctx.send("Tento token nenáleží k tvému učtu")
+        if registration.idofuser != interaction.user.id:
+            await interaction.response.send_message("Tento token nenáleží k tvému účtu", ephemeral=True)
+            session.close()
             return
 
-        parsedMail = parseMail(result.email)
+        parsed_mail = parse_mail(registration.email)
+        if not parsed_mail:
+            await interaction.response.send_message("Neplatný email v databázi. Kontaktuj správce.", ephemeral=True)
+            session.close()
+            return
 
-        studentrole = discord.utils.get(ctx.guild.roles, name="👨‍⚕️ Student")
-        await ctx.author.add_roles(studentrole)
+        student_role = discord.utils.get(interaction.guild.roles, name="👨‍⚕️ Student")
+        await interaction.user.add_roles(student_role)
 
-        if parsedMail.group(2) == "v":
-            faculty = "Veterinární lekářství"
-            facultyrole = discord.utils.get(
-                ctx.guild.roles, name="Veterinární lekářství"
-            )
-            await ctx.author.add_roles(facultyrole)
-        elif parsedMail.group(2) == "h":
-            faculty = "Veterinární hygiena a ekologie"
-            facultyrole = discord.utils.get(
-                ctx.guild.roles, name="Veterinární hygiena a ekologie"
-            )
-            await ctx.author.add_roles(facultyrole)
-        else:
-            faculty = parsedMail.group(2)
-            await ctx.author.add_roles(facultyrole)
+        faculty = "Veterinární lekářství" if parsed_mail.group(1) == "v" else "Veterinární hygiena a ekologie"
+        faculty_role = discord.utils.get(interaction.guild.roles, name=faculty)
+        await interaction.user.add_roles(faculty_role)
 
-        roleNames = [
+        grade = parsed_mail.group(2)[:2]
+        today = datetime.date.today()
+        year = today.year - (1 if today.month < 9 else 0)
+        study_year = (year % 2000) - int(grade)
+
+        role_names = [
             "1. Australopithecus",
             "2. Homo habilis",
             "3. Homo erectus",
@@ -209,40 +162,23 @@ class Slash(commands.Cog):
             "6. Homo sapiens veterinariens",
             "Vet",
         ]
+        year_role = discord.utils.get(interaction.guild.roles, name=role_names[min(study_year, 6)])
+        await interaction.user.add_roles(year_role)
 
-        grade = parsedMail.group(4)
-
-        today = datetime.date.today()
-        year = today.year
-        if today.month < 9:
-            year -=1
-
-        
-        print(int(grade)-year%2000)
-        facultyrole = discord.utils.get(ctx.guild.roles, name=roleNames[((int(grade)-year%2000) *-1)])
-
-        await ctx.author.add_roles(facultyrole)
-
-        if self.bot.db.query(User).filter_by(idx=ctx.author.id).first():
-            await ctx.send(
-                "Už si verifiková. Pokud nevidíš kanály, obrať se na Správce",
-                delete_after=10,
-            )
-            return
-
-        newUser = User(
-            idx=ctx.author.id,
-            email=result.email,
-            dateOfMailSend=result.dateOfMailSend,
+        new_user = User(
+            idx=interaction.user.id,
+            email=registration.email,
+            dateOfMailSend=registration.dateOfMailSend,
             dateOfaddingRoles=datetime.datetime.now(),
             grade=grade,
             faculty=faculty,
         )
-        self.bot.db.add(newUser)
-        self.bot.db.commit()
-        await ctx.author.send("Gratulace! Vítej na serveru VET-UNI")
-        await ctx.send("Byl jsi uspěšně verifikován!", delete_after=10)
+        session.add(new_user)
+        session.commit()
+        session.close()
 
+        await interaction.user.send("Gratulace! Vítej na serveru VET-UNI")
+        await interaction.response.send_message("Byl jsi úspěšně verifikován!", ephemeral=True)
 
-def setup(bot):
-    bot.add_cog(Slash(bot))
+async def setup(bot):
+    await bot.add_cog(VerificationCog(bot))

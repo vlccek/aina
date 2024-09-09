@@ -11,6 +11,8 @@ services:
             POSTGRES_DB: aina
         volumes:
             - postgres_data:/var/lib/postgresql/data/
+        ports:
+            - 55432:5432
     bot:
         # container_name: bot_aina
         restart: unless-stopped
