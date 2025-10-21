@@ -1,13 +1,4 @@
-# To ensure app dependencies are ported from your virtual environment/host machine into your container, run 'pip freeze > requirements.txt' in the terminal to overwrite this file
-
-discord.py>=1.7.1,<2.0.0
-SQLAlchemy>=1.4.12,<2.0.0
-
-# VFUbot/bot.py: 1,2,5
-discord == 1.0.1
-
-# VFUbot/bot.py: 3,4
-discord_py_slash_command
-
+discord.py==2.3.2
 loguru
-psycopg2-binary==2.9.7
+
+dotenv

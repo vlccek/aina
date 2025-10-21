@@ -1,30 +1,6 @@
-version: '3'
-    
+version: '3.8'
 services:
-    db:
-        # container_name: db_aina
-        image: postgres:12-alpine
-        restart: unless-stopped
-        environment:
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: Hovno123
-            POSTGRES_DB: aina
-        volumes:
-            - postgres_data:/var/lib/postgresql/data/
-    bot:
-        # container_name: bot_aina
-        restart: unless-stopped
-        build: .
-        depends_on:
-            - db
-        volumes: 
-            - ./src/database/test.py:/app/test.py
-#    pgadmin:
-        # container_name: pgadmin_aina
-#        image: dpage/pgadmin4
-#        restart: always
-#        environment:
-#          PGADMIN_DEFAULT_EMAIL: admin@admin.com
-#          PGADMIN_DEFAULT_PASSWORD: root
-volumes:
-    postgres_data:
+  bot:
+    build: .
+    env_file:
+      - .env
